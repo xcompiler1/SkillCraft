@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tic-Tac-Toe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.25);
+    --text: #1a1a18;
+    --text2: #6b6b65;
+    --text3: #a0a09a;
+    --x-color: #D85A30;
+    --o-color: #185FA5;
+    --win-bg: #E6F1FB;
+    --win-border: #85B7EB;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --surface: #252523;
+      --surface2: #2e2e2b;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.22);
+      --text: #f0efe9;
+      --text2: #9a9a94;
+      --text3: #6b6b65;
+      --x-color: #F0997B;
+      --o-color: #85B7EB;
+      --win-bg: #0c2a44;
+      --win-border: #185FA5;
+    }
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    width: 100%;
+    max-width: 360px;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    letter-spacing: 5px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  /* Mode toggle */
+  .mode-bar {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mode-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 7px 18px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+
+  .mode-btn.active {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+
+  /* Difficulty */
+  .diff-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+    letter-spacing: 0.5px;
+  }
+
+  .diff-btn {
+    padding: 4px 12px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.12s;
+  }
+
+  .diff-btn.active {
+    border-color: var(--border2);
+    color: var(--text);
+    background: var(--surface2);
+  }
+
+  /* Status */
+  .status {
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--text2);
+    height: 20px;
+    text-align: center;
+  }
+
+  .status .hl { color: var(--text); font-weight: 500; }
+
+  /* Board */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 296px;
+  }
+
+  .cell {
+    width: 88px;
+    height: 88px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 44px;
+    line-height: 1;
+    transition: background 0.12s, transform 0.1s, border-color 0.12s;
+    user-select: none;
+  }
+
+  .cell:hover:not(.taken):not(.disabled) {
+    background: var(--surface);
+    border-color: var(--border2);
+    transform: scale(1.05);
+  }
+
+  .cell.taken  { cursor: default; }
+  .cell.disabled { cursor: not-allowed; opacity: 0.55; }
+
+  .cell .mark-x { color: var(--x-color); }
+  .cell .mark-o { color: var(--o-color); }
+
+  .cell.win-cell {
+    background: var(--win-bg);
+    border-color: var(--win-border);
+  }
+
+  @keyframes popIn {
+    0%   { transform: scale(0.4); opacity: 0; }
+    70%  { transform: scale(1.18); }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+
+  .mark-anim { animation: popIn 0.22s cubic-bezier(.4,0,.2,1) both; }
+
+  /* Thinking indicator */
+  .thinking {
+    font-size: 12px;
+    color: var(--text3);
+    letter-spacing: 1px;
+    height: 16px;
+    animation: pulse 1s ease-in-out infinite;
+    visibility: hidden;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:0.35} 50%{opacity:1} }
+
+  /* Score row */
+  .score-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .score-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 20px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface2);
+    min-width: 76px;
+  }
+
+  .sc-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .sc-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .sc-x .sc-val { color: var(--x-color); }
+  .sc-o .sc-val { color: var(--o-color); }
+
+  /* Reset button */
+  .reset-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 9px 28px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .reset-btn:hover  { background: var(--surface2); }
+  .reset-btn:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>TIC TAC TOE</h1>
+
+  <!-- Mode selector -->
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btn-pvp" onclick="setMode('pvp')">VS PLAYER</button>
+    <button class="mode-btn"        id="btn-pvc" onclick="setMode('pvc')">VS COMPUTER</button>
+  </div>
+
+  <!-- Difficulty (shown only in vs-computer mode) -->
+  <div class="diff-row" id="diff-row" style="display:none;">
+    <span>DIFFICULTY:</span>
+    <button class="diff-btn active" id="d-easy" onclick="setDiff('easy')">EASY</button>
+    <button class="diff-btn"        id="d-hard" onclick="setDiff('hard')">HARD</button>
+  </div>
+
+  <!-- Turn / result status -->
+  <p class="status" id="status-txt"><span class="hl">X</span>'S TURN</p>
+
+  <!-- Game board -->
+  <div class="board" id="board"></div>
+
+  <!-- AI thinking indicator -->
+  <p class="thinking" id="thinking-txt">THINKING…</p>
+
+  <!-- Scoreboard -->
+  <div class="score-row">
+    <div class="score-card sc-x">
+      <span class="sc-label" id="p1-label">PLAYER X</span>
+      <span class="sc-val"   id="score-x">0</span>
+    </div>
+    <div class="score-card">
+      <span class="sc-label">DRAWS</span>
+      <span class="sc-val" id="score-d">0</span>
+    </div>
+    <div class="score-card sc-o">
+      <span class="sc-label" id="p2-label">PLAYER O</span>
+      <span class="sc-val"   id="score-o">0</span>
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="resetGame()">NEW GAME</button>
+</div>
+
+<script>
+  /* ── Constants ── */
+  const WIN_LINES = [
+    [0,1,2],[3,4,5],[6,7,8],   // rows
+    [0,3,6],[1,4,7],[2,5,8],   // cols
+    [0,4,8],[2,4,6]            // diagonals
+  ];
+
+  /* ── State ── */
+  let board, current, gameOver, mode, diff, scores;
+
+  /* ── Init ── */
+  function init() {
+    board    = Array(9).fill(null);
+    current  = 'X';
+    gameOver = false;
+    mode     = mode  || 'pvp';
+    diff     = diff  || 'easy';
+    scores   = scores || { X:0, O:0, D:0 };
+    renderBoard();
+    updateStatus();
+    document.getElementById('thinking-txt').style.visibility = 'hidden';
+  }
+
+  /* ── Mode & difficulty ── */
+  function setMode(m) {
+    mode = m;
+    document.getElementById('btn-pvp').classList.toggle('active', m === 'pvp');
+    document.getElementById('btn-pvc').classList.toggle('active', m === 'pvc');
+    document.getElementById('diff-row').style.display = m === 'pvc' ? 'flex' : 'none';
+    document.getElementById('p2-label').textContent   = m === 'pvc' ? 'COMPUTER' : 'PLAYER O';
+    scores = { X:0, O:0, D:0 };
+    updateScoreDisplay();
+    init();
+  }
+
+  function setDiff(d) {
+    diff = d;
+    document.getElementById('d-easy').classList.toggle('active', d === 'easy');
+    document.getElementById('d-hard').classList.toggle('active', d === 'hard');
+    scores = { X:0, O:0, D:0 };
+    updateScoreDisplay();
+    init();
+  }
+
+  /* ── Render board ── */
+  function renderBoard() {
+    const el = document.getElementById('board');
+    el.innerHTML = '';
+    board.forEach((v, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (v ? ' taken' : '') + (gameOver && !v ? ' disabled' : '');
+      cell.setAttribute('aria-label', v ? `${v} at cell ${i + 1}` : `empty cell ${i + 1}`);
+      if (v) {
+        const span = document.createElement('span');
+        span.className = `mark-${v.toLowerCase()} mark-anim`;
+        span.textContent = v;
+        cell.appendChild(span);
+      }
+      if (!v && !gameOver) cell.onclick = () => handleClick(i);
+      el.appendChild(cell);
+    });
+  }
+
+  /* ── Click handler ── */
+  function handleClick(i) {
+    if (board[i] || gameOver) return;
+    if (mode === 'pvc' && current === 'O') return; // block clicks during AI turn
+    place(i);
+  }
+
+  /* ── Place a mark ── */
+  function place(i) {
+    board[i] = current;
+    const result = checkWinner(board);
+    renderBoard();
+
+    if (result) {
+      if (result.player === 'draw') {
+        scores.D++;
+        setStatus("IT'S A DRAW", null);
+      } else {
+        scores[result.player]++;
+        const label = mode === 'pvc' && result.player === 'O'
+          ? 'COMPUTER WINS!'
+          : `PLAYER ${result.player} WINS!`;
+        setStatus(label, result.player);
+        highlightWin(result.line);
+      }
+      updateScoreDisplay();
+      gameOver = true;
+      return;
+    }
+
+    current = current === 'X' ? 'O' : 'X';
+    updateStatus();
+
+    if (mode === 'pvc' && current === 'O' && !gameOver) {
+      document.getElementById('thinking-txt').style.visibility = 'visible';
+      setTimeout(aiMove, 500);
+    }
+  }
+
+  /* ── Highlight winning cells ── */
+  function highlightWin(line) {
+    const cells = document.getElementById('board').children;
+    line.forEach(i => cells[i].classList.add('win-cell'));
+  }
+
+  /* ── Status text ── */
+  function updateStatus() {
+    const el = document.getElementById('status-txt');
+    if (mode === 'pvc' && current === 'O') {
+      el.innerHTML = `<span class="hl">COMPUTER</span> IS THINKING`;
+    } else {
+      el.innerHTML = `<span class="hl">${current}</span>'S TURN`;
+    }
+  }
+
+  function setStatus(msg, winner) {
+    const el = document.getElementById('status-txt');
+    const color = winner === 'X' ? 'var(--x-color)'
+                : winner === 'O' ? 'var(--o-color)'
+                : 'var(--text2)';
+    el.innerHTML = `<span style="color:${color};font-weight:500;">${msg}</span>`;
+  }
+
+  /* ── Score display ── */
+  function updateScoreDisplay() {
+    document.getElementById('score-x').textContent = scores.X;
+    document.getElementById('score-o').textContent = scores.O;
+    document.getElementById('score-d').textContent = scores.D;
+  }
+
+  /* ── Reset (keep scores) ── */
+  function resetGame() {
+    board    = Array(9).fill(null);
+    current  = 'X';
+    gameOver = false;
+    document.getElementById('thinking-txt').style.visibility = 'hidden';
+    renderBoard();
+    updateStatus();
+  }
+
+  /* ── Win checker ── */
+  function checkWinner(b) {
+    for (const line of WIN_LINES) {
+      const [a, c, d] = line;
+      if (b[a] && b[a] === b[c] && b[a] === b[d]) {
+        return { player: b[a], line };
+      }
+    }
+    if (b.every(v => v)) return { player: 'draw', line: [] };
+    return null;
+  }
+
+  /* ── AI: easy (random) ── */
+  function aiMove() {
+    document.getElementById('thinking-txt').style.visibility = 'hidden';
+    if (gameOver) return;
+
+    let idx;
+    if (diff === 'easy') {
+      const empty = board.map((v, i) => v ? null : i).filter(v => v !== null);
+      idx = empty[Math.floor(Math.random() * empty.length)];
+    } else {
+      idx = minimax(board, 'O').index;
+    }
+
+    if (idx !== undefined && idx !== null) place(idx);
+  }
+
+  /* ── AI: hard (minimax) ── */
+  function minimax(b, player) {
+    const result = checkWinner(b);
+    if (result) {
+      if (result.player === 'O')    return { score:  10 };
+      if (result.player === 'X')    return { score: -10 };
+      if (result.player === 'draw') return { score:   0 };
+    }
+
+    const empty = b.map((v, i) => v ? null : i).filter(v => v !== null);
+    if (!empty.length) return { score: 0 };
+
+    const moves = empty.map(i => {
+      const nb = [...b];
+      nb[i] = player;
+      const res = minimax(nb, player === 'O' ? 'X' : 'O');
+      return { index: i, score: res.score };
+    });
+
+    return player === 'O'
+      ? moves.reduce((a, b) => b.score > a.score ? b : a)  // maximise for O
+      : moves.reduce((a, b) => b.score < a.score ? b : a); // minimise for X
+  }
+
+  /* ── Start ── */
+  init();
+</script>
+</body>
+</html>

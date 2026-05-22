@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Horizon — Interactive Nav</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --text: #e8e4dc;
+      --muted: #7a7570;
+      --accent: #c8a96e;
+      --accent2: #6e9ec8;
+      --nav-h: 72px;
+      --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ─── NAVBAR ─────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+      transition: background var(--transition), backdrop-filter var(--transition),
+                  border-color var(--transition), height var(--transition);
+      border-bottom: 1px solid transparent;
+    }
+
+    nav.transparent {
+      background: transparent;
+    }
+
+    nav.scrolled {
+      background: rgba(10, 10, 15, 0.82);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-color: rgba(200, 169, 110, 0.15);
+      height: 58px;
+    }
+
+    /* Logo */
+    .nav-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.6rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      text-decoration: none;
+      position: relative;
+      transition: color var(--transition);
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-logo::after {
+      content: '';
+      position: absolute;
+      bottom: -3px; left: 0;
+      width: 0; height: 1px;
+      background: var(--accent);
+      transition: width var(--transition);
+    }
+    .nav-logo:hover::after { width: 100%; }
+
+    /* Links */
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      list-style: none;
+    }
+
+    .nav-links li a {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4em;
+      padding: 0.5em 0.9em;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 3px;
+      transition: color 0.25s, background 0.25s;
+      overflow: hidden;
+    }
+
+    .nav-links li a .num {
+      font-size: 0.6rem;
+      color: var(--accent);
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .nav-links li a::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(200, 169, 110, 0.07);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    .nav-links li a:hover {
+      color: var(--text);
+    }
+    .nav-links li a:hover::before { opacity: 1; }
+    .nav-links li a:hover .num {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Sliding underline */
+    .nav-links li a::after {
+      content: '';
+      position: absolute;
+      bottom: 4px; left: 50%;
+      width: 0; height: 1px;
+      background: var(--accent);
+      transform: translateX(-50%);
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-links li a:hover::after { width: calc(100% - 1.8em); }
+
+    /* CTA button */
+    .nav-cta {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent) !important;
+      border: 1px solid rgba(200, 169, 110, 0.4) !important;
+      border-radius: 2px !important;
+      padding: 0.55em 1.2em !important;
+      transition: color 0.25s, border-color 0.25s, background 0.25s !important;
+    }
+    .nav-cta:hover {
+      background: var(--accent) !important;
+      color: var(--bg) !important;
+      border-color: var(--accent) !important;
+    }
+    .nav-cta::after { display: none !important; }
+
+    /* Mobile hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 4px;
+      background: none;
+      border: none;
+    }
+    .hamburger span {
+      display: block;
+      width: 24px; height: 1px;
+      background: var(--text);
+      transition: transform 0.3s, opacity 0.3s, width 0.3s;
+      transform-origin: center;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; width: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+    /* Mobile menu */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: var(--nav-h); left: 0; right: 0;
+      background: rgba(10,10,15,0.97);
+      backdrop-filter: blur(20px);
+      padding: 2rem clamp(1.5rem, 5vw, 4rem);
+      border-bottom: 1px solid rgba(200,169,110,0.15);
+      transform: translateY(-10px);
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      z-index: 999;
+    }
+    .mobile-menu.open { opacity: 1; transform: translateY(0); }
+    .mobile-menu ul { list-style: none; }
+    .mobile-menu ul li + li { border-top: 1px solid rgba(255,255,255,0.05); }
+    .mobile-menu ul li a {
+      display: block;
+      padding: 1rem 0;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem;
+      font-weight: 300;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: color 0.2s, padding-left 0.25s;
+    }
+    .mobile-menu ul li a:hover { color: var(--text); padding-left: 0.75rem; }
+
+    /* Scroll progress bar */
+    #progress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      z-index: 1001;
+      transition: width 0.1s linear;
+    }
+
+    /* ─── HERO ────────────────────────────────────── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: calc(var(--nav-h) + 2rem) 2rem 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 30%, rgba(110,158,200,0.08) 0%, transparent 70%),
+                  radial-gradient(ellipse 50% 40% at 80% 70%, rgba(200,169,110,0.06) 0%, transparent 60%);
+    }
+    .grid-lines {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    }
+
+    .hero-content { position: relative; max-width: 750px; }
+
+    .hero-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.3s forwards;
+    }
+    .hero-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(3rem, 9vw, 7rem);
+      font-weight: 300;
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.5s forwards;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .hero-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.8;
+      max-width: 480px;
+      margin: 0 auto 3rem;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.7s forwards;
+    }
+    .hero-buttons {
+      display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.9s forwards;
+    }
+    .btn-primary {
+      padding: 0.85em 2.2em;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; }
+    .btn-ghost {
+      padding: 0.85em 2.2em;
+      background: transparent;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 2px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-ghost:hover { border-color: var(--text); }
+
+    /* Scroll cue */
+    .scroll-cue {
+      position: absolute;
+      bottom: 2.5rem; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      color: var(--muted);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeUp 1s 1.3s forwards;
+    }
+    .scroll-cue .line {
+      width: 1px; height: 48px;
+      background: linear-gradient(to bottom, var(--muted), transparent);
+      animation: scrollLine 1.8s 1.5s infinite;
+    }
+    @keyframes scrollLine {
+      0%   { transform: scaleY(0); transform-origin: top; }
+      50%  { transform: scaleY(1); transform-origin: top; }
+      51%  { transform: scaleY(1); transform-origin: bottom; }
+      100% { transform: scaleY(0); transform-origin: bottom; }
+    }
+
+    /* ─── CONTENT SECTIONS ───────────────────────── */
+    section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6rem clamp(1.5rem, 8vw, 8rem);
+      position: relative;
+    }
+
+    #about { background: var(--surface); }
+    #work  { background: var(--bg); }
+    #journal { background: var(--surface); }
+    #contact { background: var(--bg); }
+
+    .section-inner { max-width: 860px; width: 100%; }
+
+    .section-tag {
+      font-size: 0.62rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.2rem;
+    }
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.2rem, 6vw, 4.5rem);
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 1.8rem;
+    }
+    .section-body {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 2;
+      max-width: 540px;
+    }
+
+    /* Cards */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1px;
+      margin-top: 3rem;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .card {
+      padding: 2rem;
+      background: var(--bg);
+      border: none;
+      transition: background 0.3s;
+      cursor: pointer;
+    }
+    #about .card { background: var(--surface); }
+    .card:hover { background: rgba(200,169,110,0.04); }
+    .card-num {
+      font-size: 0.6rem;
+      color: var(--accent);
+      letter-spacing: 0.2em;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem;
+      font-weight: 300;
+      margin-bottom: 0.6rem;
+    }
+    .card-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.7; }
+
+    /* ─── ANIMATIONS ─────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.35s; }
+
+    /* ─── FOOTER ─────────────────────────────────── */
+    footer {
+      padding: 3rem clamp(1.5rem, 5vw, 4rem);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    footer p { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; }
+    footer a { color: var(--accent); text-decoration: none; font-size: 0.65rem; letter-spacing: 0.1em; }
+
+    /* ─── RESPONSIVE ──────────────────────────────── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .mobile-menu { display: block; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Scroll progress -->
+<div id="progress"></div>
+
+<!-- ── NAV ─────────────────────────────────────────── -->
+<nav id="navbar" class="transparent">
+  <a href="#hero" class="nav-logo">Hori<span>zon</span></a>
+
+  <ul class="nav-links">
+    <li><a href="#about"><span class="num">01</span> About</a></li>
+    <li><a href="#work"><span class="num">02</span> Work</a></li>
+    <li><a href="#journal"><span class="num">03</span> Journal</a></li>
+    <li><a href="#contact" class="nav-cta">Contact</a></li>
+  </ul>
+
+  <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <ul>
+    <li><a href="#about"   onclick="closeMobile()">About</a></li>
+    <li><a href="#work"    onclick="closeMobile()">Work</a></li>
+    <li><a href="#journal" onclick="closeMobile()">Journal</a></li>
+    <li><a href="#contact" onclick="closeMobile()">Contact</a></li>
+  </ul>
+</div>
+
+<!-- ── HERO ────────────────────────────────────────── -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="grid-lines"></div>
+  <div class="hero-content">
+    <p class="hero-label">Est. 2024 &nbsp;·&nbsp; Creative Studio</p>
+    <h1 class="hero-title">Where <em>ideas</em><br>find their form</h1>
+    <p class="hero-sub">
+      We craft digital experiences that linger — blending considered design with precise engineering for brands that refuse to be ordinary.
+    </p>
+    <div class="hero-buttons">
+      <button class="btn-primary" onclick="document.querySelector('#work').scrollIntoView({behavior:'smooth'})">View Our Work</button>
+      <button class="btn-ghost"   onclick="document.querySelector('#about').scrollIntoView({behavior:'smooth'})">Learn More</button>
+    </div>
+  </div>
+  <div class="scroll-cue">
+    <div class="line"></div>
+    <span>Scroll</span>
+  </div>
+</section>
+
+<!-- ── ABOUT ───────────────────────────────────────── -->
+<section id="about">
+  <div class="section-inner">
+    <p class="section-tag reveal">01 — Studio</p>
+    <h2 class="section-title reveal reveal-delay-1">Craft over<br>convention</h2>
+    <p class="section-body reveal reveal-delay-2">
+      We believe the best design is felt before it is understood. Every pixel, every pause, every transition is a deliberate choice in service of the whole.
+    </p>
+    <div class="cards reveal reveal-delay-3">
+      <div class="card">
+        <p class="card-num">001</p>
+        <h3 class="card-title">Strategy</h3>
+        <p class="card-desc">Vision-first thinking that aligns brand purpose with audience desire.</p>
+      </div>
+      <div class="card">
+        <p class="card-num">002</p>
+        <h3 class="card-title">Design</h3>
+        <p class="card-desc">Visual languages crafted to be unmistakable and enduring.</p>
+      </div>
+      <div class="card">
+        <p class="card-num">003</p>
+        <h3 class="card-title">Engineering</h3>
+        <p class="card-desc">Production-grade code that brings ambitious interfaces to life.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── WORK ────────────────────────────────────────── -->
+<section id="work">
+  <div class="section-inner">
+    <p class="section-tag reveal">02 — Selected Work</p>
+    <h2 class="section-title reveal reveal-delay-1">Projects that<br><em>matter</em></h2>
+    <p class="section-body reveal reveal-delay-2">
+      A curated collection of collaborations with founders, agencies, and institutions who wanted more than ordinary.
+    </p>
+    <div class="cards reveal reveal-delay-3">
+      <div class="card">
+        <p class="card-num">2024</p>
+        <h3 class="card-title">Aurum Finance</h3>
+        <p class="card-desc">Brand identity and product design for a next-gen wealth platform.</p>
+      </div>
+      <div class="card">
+        <p class="card-num">2024</p>
+        <h3 class="card-title">Lumen Editorial</h3>
+        <p class="card-desc">Digital magazine with immersive long-form reading experience.</p>
+      </div>
+      <div class="card">
+        <p class="card-num">2023</p>
+        <h3 class="card-title">Solstice Studio</h3>
+        <p class="card-desc">E-commerce redesign driving 3× conversion uplift in 60 days.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── JOURNAL ─────────────────────────────────────── -->
+<section id="journal">
+  <div class="section-inner">
+    <p class="section-tag reveal">03 — Journal</p>
+    <h2 class="section-title reveal reveal-delay-1">Thinking out<br>loud</h2>
+    <p class="section-body reveal reveal-delay-2">
+      Notes on craft, culture, and the quiet decisions that separate good work from great work.
+    </p>
+    <div class="cards reveal reveal-delay-3">
+      <div class="card">
+        <p class="card-num">May 2025</p>
+        <h3 class="card-title">On Restraint</h3>
+        <p class="card-desc">Why removing is harder than adding, and why it always pays off.</p>
+      </div>
+      <div class="card">
+        <p class="card-num">Apr 2025</p>
+        <h3 class="card-title">Type as Texture</h3>
+        <p class="card-desc">Typography as atmosphere — beyond legibility into feeling.</p>
+      </div>
+      <div class="card">
+        <p class="card-num">Mar 2025</p>
+        <h3 class="card-title">Motion Grammar</h3>
+        <p class="card-desc">Building a consistent vocabulary of movement for digital products.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CONTACT ─────────────────────────────────────── -->
+<section id="contact">
+  <div class="section-inner" style="text-align:center; max-width:600px; margin:0 auto;">
+    <p class="section-tag reveal" style="justify-content:center; display:block;">04 — Let's Talk</p>
+    <h2 class="section-title reveal reveal-delay-1">Ready to build<br>something <em>real?</em></h2>
+    <p class="section-body reveal reveal-delay-2" style="margin:0 auto 2.5rem;">
+      We take on a small number of projects each quarter to ensure every client gets our full attention.
+    </p>
+    <div class="reveal reveal-delay-3">
+      <button class="btn-primary" style="font-size:0.75rem; padding:1em 3em;">
+        hello@horizon.studio
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ──────────────────────────────────────── -->
+<footer>
+  <p>© 2025 Horizon Studio. All rights reserved.</p>
+  <a href="#hero">Back to top ↑</a>
+</footer>
+
+<script>
+  const navbar = document.getElementById('navbar');
+  const progress = document.getElementById('progress');
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+
+  // ── Scroll: navbar style + progress bar ──────────
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY;
+    const total = document.body.scrollHeight - window.innerHeight;
+
+    // Navbar state
+    if (scrolled > 40) {
+      navbar.classList.add('scrolled');
+      navbar.classList.remove('transparent');
+    } else {
+      navbar.classList.remove('scrolled');
+      navbar.classList.add('transparent');
+    }
+
+    // Progress bar
+    progress.style.width = (scrolled / total * 100) + '%';
+  });
+
+  // ── Mobile menu toggle ───────────────────────────
+  hamburger.addEventListener('click', () => {
+    const open = hamburger.classList.toggle('open');
+    mobileMenu.classList.toggle('open', open);
+  });
+
+  function closeMobile() {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  }
+
+  // ── Scroll reveal ────────────────────────────────
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  reveals.forEach(el => observer.observe(el));
+
+  // ── Active nav link highlight ────────────────────
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a:not(.nav-cta)');
+
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(a => {
+          const active = a.getAttribute('href') === '#' + id;
+          a.style.color = active ? 'var(--text)' : '';
+        });
+      }
+    });
+  }, { threshold: 0.4 });
+
+  sections.forEach(s => sectionObserver.observe(s));
+</script>
+</body>
+</html>
